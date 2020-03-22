@@ -66,7 +66,7 @@ class CustomSACPolicy(SACPolicy):
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
-                                               layers=[32, 8],
+                                               layers=[32,32,32,32],
                                                feature_extraction="mlp",
                                                layer_norm=True)
 
@@ -117,6 +117,7 @@ def make_env(level=0, seed=0, log_dir=None, vae=None, frame_skip=None,
 
     def _init():
         set_global_seeds(seed)
+        # Change here for the constant throttle
         env = DonkeyVAEEnv(level=level, frame_skip=frame_skip, vae=vae, const_throttle=None, min_throttle=MIN_THROTTLE,
                            max_throttle=MAX_THROTTLE, max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY,
                            n_stack=n_stack, seed=seed)
@@ -150,6 +151,7 @@ def create_test_env(level=0, stats_path=None, seed=0,
     if vae_path == '':
         vae_path = os.path.join(stats_path, 'vae.pkl')
     vae = None
+
     if stats_path is not None and os.path.isfile(vae_path):
         vae = load_vae(vae_path)
 
@@ -221,7 +223,8 @@ def get_latest_run_id(log_path, env_id):
     for path in glob.glob(log_path + "/{}_[0-9]*".format(env_id)):
         file_name = path.split("/")[-1]
         ext = file_name.split("_")[-1]
-        if env_id == "_".join(file_name.split("_")[:-1]) and ext.isdigit() and int(ext) > max_run_id:
+        # if env_id == "_".join(file_name.split("_")[:-1]) and ext.isdigit() and int(ext) > max_run_id:
+        if ext.isdigit() and int(ext) > max_run_id:
             max_run_id = int(ext)
     return max_run_id
 
@@ -240,7 +243,7 @@ def get_saved_hyperparams(stats_path, norm_reward=False):
         if os.path.isfile(config_file):
             # Load saved hyperparameters
             with open(os.path.join(stats_path, 'config.yml'), 'r') as f:
-                hyperparams = yaml.load(f)
+                hyperparams = yaml.load(f,Loader=yaml.UnsafeLoader)
             hyperparams['normalize'] = hyperparams.get('normalize', False)
         else:
             obs_rms_path = os.path.join(stats_path, 'obs_rms.pkl')
