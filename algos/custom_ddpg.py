@@ -9,7 +9,6 @@ from stable_baselines import logger
 from stable_baselines.ddpg.ddpg import DDPG
 from stable_baselines.common import TensorboardWriter
 
-
 class DDPGWithVAE(DDPG):
     """
     Custom DDPG version in order to work with donkey car env.
@@ -27,7 +26,7 @@ class DDPGWithVAE(DDPG):
             # we assume symmetric actions.
             assert np.all(np.abs(self.env.action_space.low) == self.env.action_space.high)
 
-            self.episode_reward = np.zeros((1,))
+            self.total_episode_reward = np.zeros((1,))
             with self.sess.as_default(), self.graph.as_default():
                 # Prepare everything.
                 self._reset()
@@ -62,6 +61,8 @@ class DDPGWithVAE(DDPG):
                         # Execute next action.
                         new_obs, reward, done, info = self.env.step(action * np.abs(self.action_space.low))
 
+                        #TODO: Writer->total_episode_reward_logger
+
                         step += 1
                         total_steps += 1
                         if rank == 0 and self.render:
@@ -85,6 +86,8 @@ class DDPGWithVAE(DDPG):
                         if done:
                             print("Episode finished. Reward: {:.2f} {} Steps".format(episode_reward, episode_step))
 
+                            self.total_episode_reward = np.append(self.total_episode_reward,episode_reward)
+
                             # Episode done.
                             episode_reward = 0.
                             episode_step = 0
@@ -92,15 +95,18 @@ class DDPGWithVAE(DDPG):
 
                             self._reset()
                             obs = self.env.reset()
+                            obs = self.env.reset()
                             # Finish rollout on episode finish.
                             break
+
+                    print("Rollout finished.")
 
                     # Train DDPG.
                     actor_losses = []
                     critic_losses = []
                     train_start = time.time()
                     for t_train in range(self.nb_train_steps):
-                        critic_loss, actor_loss = self._train_step(0, None, log=t_train == 0)
+                        critic_loss, actor_loss = self._train_step(step, writer, log=t_train == 0)
                         critic_losses.append(critic_loss)
                         actor_losses.append(actor_loss)
                         self._update_target_net()
