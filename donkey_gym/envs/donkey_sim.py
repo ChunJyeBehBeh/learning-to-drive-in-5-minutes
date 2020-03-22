@@ -234,6 +234,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         """
         :return: (bool)
         """
+        # print(self.hit != "none",math.fabs(self.cte) > self.max_cte_error)
         return self.hit != "none" or math.fabs(self.cte) > self.max_cte_error
 
     def calc_reward(self, done):
@@ -245,13 +246,21 @@ class DonkeyUnitySimHandler(IMesgHandler):
         :param done: (bool)
         :return: (float)
         """
+        # if done:
+        #     # penalize the agent for getting off the road fast
+        #     norm_throttle = (self.last_throttle - MIN_THROTTLE) / (MAX_THROTTLE - MIN_THROTTLE)
+        #     return REWARD_CRASH - CRASH_SPEED_WEIGHT * norm_throttle
+        # # 1 per timesteps + throttle
+        # throttle_reward = THROTTLE_REWARD_WEIGHT * (self.last_throttle / MAX_THROTTLE)
+        # return 1 + throttle_reward
+
         if done:
-            # penalize the agent for getting off the road fast
-            norm_throttle = (self.last_throttle - MIN_THROTTLE) / (MAX_THROTTLE - MIN_THROTTLE)
-            return REWARD_CRASH - CRASH_SPEED_WEIGHT * norm_throttle
-        # 1 per timesteps + throttle
-        throttle_reward = THROTTLE_REWARD_WEIGHT * (self.last_throttle / MAX_THROTTLE)
-        return 1 + throttle_reward
+            return -1.0
+
+        if abs(self.cte) > self.max_cte_error:
+            return -1.0
+
+        return 1.0 - (abs(self.cte) / self.max_cte_error)
 
     # ------ Socket interface ----------- #
 

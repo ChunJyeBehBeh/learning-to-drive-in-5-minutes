@@ -8,7 +8,7 @@ from stable_baselines.common.vec_env import VecEnv
 from stable_baselines.a2c.utils import total_episode_reward_logger
 from stable_baselines.ppo2.ppo2 import safe_mean, get_schedule_fn
 from stable_baselines.common import TensorboardWriter
-
+import cv2
 
 class SACWithVAE(SAC):
     """
@@ -47,12 +47,11 @@ class SACWithVAE(SAC):
 
     def learn(self, total_timesteps, callback=None, seed=None,
               log_interval=1, tb_log_name="SAC", print_freq=100, reset_num_timesteps=True):
-
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
 
         with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name, new_tb_log) as writer:
 
-            self._setup_learn(seed)
+            self._setup_learn()
 
             # Transform to callable if needed
             self.learning_rate = get_schedule_fn(self.learning_rate)
@@ -72,6 +71,8 @@ class SACWithVAE(SAC):
                 obs = self.env.reset()
 
             self.episode_reward = np.zeros((1,))
+            self.total_episode_reward = np.zeros((1,))
+
             ep_info_buf = deque(maxlen=100)
             ep_len = 0
             self.n_updates = 0
@@ -114,6 +115,10 @@ class SACWithVAE(SAC):
                 if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
                     print("{} steps".format(ep_len))
 
+                # Debug Purpose: Check the input shape that store into replay_buffer
+                # print(obs.shape)
+                # cv2.imwrite("TEST/{}.jpg".format(step),obs)
+
                 # Store transition in the replay buffer.
                 self.replay_buffer.add(obs, action, reward, new_obs, float(done))
                 obs = new_obs
@@ -144,14 +149,16 @@ class SACWithVAE(SAC):
                         obs = self.env.reset()
 
                     print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
+                    self.total_episode_reward = np.append(self.total_episode_reward,episode_rewards[-1])
                     episode_rewards.append(0.0)
                     ep_len = 0
                     mb_infos_vals = self.optimize(step, writer, current_lr)
-
+                    
                     # Refresh obs when using TeleopEnv
                     if is_teleop_env:
                         print("Waiting for teleop")
                         obs = self.env.wait_for_teleop_reset()
+                    self.env.reset()
 
                 # Log losses and entropy, useful for monitor training
                 if len(mb_infos_vals) > 0:

@@ -28,10 +28,11 @@ class PPO2WithVAE(PPO2):
 
 
         with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name, new_tb_log) as writer:
-            self._setup_learn(seed)
+            # self._setup_learn(seed)
 
             runner = Runner(env=self.env, model=self, n_steps=self.n_steps, gamma=self.gamma, lam=self.lam)
             self.episode_reward = np.zeros((self.n_envs,))
+            self.total_episode_reward = np.zeros((1,))
 
             ep_info_buf = deque(maxlen=100)
             t_first_start = time.time()
@@ -82,11 +83,11 @@ class PPO2WithVAE(PPO2):
                 t_now = time.time()
                 fps = int(self.n_batch / (t_now - t_start))
 
-                if writer is not None:
-                    self.episode_reward = total_episode_reward_logger(self.episode_reward,
-                                                                      true_reward.reshape((self.n_envs, self.n_steps)),
-                                                                      masks.reshape((self.n_envs, self.n_steps)),
-                                                                      writer, n_timesteps)
+                # if writer is not None:
+                #     self.episode_reward = total_episode_reward_logger(self.episode_reward,
+                #                                                       true_reward.reshape((self.n_envs, self.n_steps)),
+                #                                                       masks.reshape((self.n_envs, self.n_steps)),
+                #                                                       writer, n_timesteps)
 
                 if self.verbose >= 1 and (timestep % log_interval == 0 or timestep == 1):
                     explained_var = explained_variance(values, returns)
@@ -100,6 +101,7 @@ class PPO2WithVAE(PPO2):
                     for (loss_val, loss_name) in zip(loss_vals, self.loss_names):
                         logger.logkv(loss_name, loss_val)
                     logger.dumpkvs()
+                    self.total_episode_reward = runner.total_episode_reward
 
                 if callback is not None:
                     # Only stop training if return value is False, not when it is None. This is for backwards
@@ -126,6 +128,8 @@ class Runner(AbstractEnvRunner):
         super().__init__(env=env, model=model, n_steps=n_steps)
         self.lam = lam
         self.gamma = gamma
+        self.total_episode_reward = np.zeros((1,))
+
 
     def run(self):
         """
@@ -164,6 +168,8 @@ class Runner(AbstractEnvRunner):
             mb_rewards.append(rewards)
             if self.dones:
                 print("Episode finished. Reward: {:.2f} {} Steps".format(np.sum(mb_rewards), len(mb_rewards)))
+                self.total_episode_reward = np.append(self.total_episode_reward,mb_rewards)
+
                 if len(mb_rewards) >= self.n_steps:
                     break
 
