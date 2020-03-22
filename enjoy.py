@@ -1,6 +1,8 @@
 # Code adapted from https://github.com/araffin/rl-baselines-zoo
 # Author: Antonin Raffin
-
+# python enjoy.py --algo ddpg -vae vae-level-0-dim-32.pkl --exp-id 1 -n 5000
+# python enjoy.py --algo sac --exp-id 15 -n 5000
+# python enjoy.py --algo ddpg -vae logs/vae-64.pkl --exp-id 24 -n 5000
 import argparse
 import os
 import time
@@ -27,7 +29,7 @@ parser.add_argument('--deterministic', action='store_true', default=False,
                     help='Use deterministic actions')
 parser.add_argument('--norm-reward', action='store_true', default=False,
                     help='Normalize reward if applicable (trained with VecNormalize)')
-parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
+parser.add_argument('--seed', help='Random generator seed', type=int, default=41)
 parser.add_argument('--reward-log', help='Where to log reward', default='', type=str)
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
 parser.add_argument('-best', '--best-model', action='store_true', default=False,
@@ -55,20 +57,23 @@ if args.best_model:
 
 model_path = os.path.join(log_path, "{}{}.pkl".format(ENV_ID, best_path))
 
-assert os.path.isdir(log_path), "The {} folder was not found".format(log_path)
+assert os.path.isdir(log_path), "The {} folder was not found".format(log_path)  # log_path: logs\ddpg
 assert os.path.isfile(model_path), "No model found for {} on {}, path: {}".format(algo, ENV_ID, model_path)
 
 set_global_seeds(args.seed)
 
 stats_path = os.path.join(log_path, ENV_ID)
+
 hyperparams, stats_path = get_saved_hyperparams(stats_path, norm_reward=args.norm_reward)
 hyperparams['vae_path'] = args.vae_path
 
 log_dir = args.reward_log if args.reward_log != '' else None
 
+print("!!!!!!!!!!",stats_path)
 env = create_test_env(args.level, stats_path=stats_path, seed=args.seed, log_dir=log_dir,
                       hyperparams=hyperparams)
 
+print("Loaded Model path from {}".format(model_path))
 model = ALGOS[algo].load(model_path)
 
 obs = env.reset()

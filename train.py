@@ -1,5 +1,8 @@
 # Code adapted from https://github.com/araffin/rl-baselines-zoo
 # Author: Antonin Raffin
+# python train.py --algo sac -vae vae-level-0-dim-32.pkl -n 250000
+# python train.py --algo ddpg -vae vae-level-0-dim-32.pkl -n 250000
+# python train.py --algo sac -vae logs/vae-64.pkl -n 250000
 import argparse
 import os
 import time
@@ -20,8 +23,11 @@ from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, loa
 from teleop.teleop_client import TeleopEnv
 from teleop.recorder import Recorder
 
+import time
+import datetime
+
 parser = argparse.ArgumentParser()
-parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='', type=str)
+parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='log', type=str)
 parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training',
                     default='', type=str)
 parser.add_argument('--algo', help='RL Algorithm', default='sac',
@@ -34,7 +40,7 @@ parser.add_argument('-f', '--log-folder', help='Log folder', type=str, default='
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
-parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
+parser.add_argument('--seed', help='Random generator seed', type=int, default=50)
 parser.add_argument('--level', help='Level index', type=int, default=0)
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
@@ -60,6 +66,7 @@ if args.trained_agent != "":
 tensorboard_log = None if args.tensorboard_log == '' else os.path.join(args.tensorboard_log, ENV_ID)
 
 print("=" * 10, ENV_ID, args.algo, "=" * 10)
+print("Tensorboard Directory ------->",tensorboard_log)
 
 vae = None
 if args.vae_path != '':
@@ -92,6 +99,10 @@ pprint(saved_hyperparams)
 
 # Compute and create log path
 log_path = os.path.join(args.log_folder, args.algo)
+print("------------")
+print(log_path,ENV_ID)          # logs\sac DonkeyVae-v0-level-0  
+print(get_latest_run_id(log_path, ENV_ID) + 1)  # 1
+print("------------")
 save_path = os.path.join(log_path, "{}_{}".format(ENV_ID, get_latest_run_id(log_path, ENV_ID) + 1))
 params_path = os.path.join(save_path, ENV_ID)
 os.makedirs(params_path, exist_ok=True)
@@ -173,7 +184,7 @@ if args.algo in ['ddpg', 'sac'] and hyperparams.get('noise_type') is not None:
 
 if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
     # Continue training
-    print("Loading pretrained agent")
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Loading pretrained agent")
     # Policy should not be changed
     del hyperparams['policy']
 
@@ -185,6 +196,7 @@ if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
         print("Loading saved running average")
         env.load_running_average(exp_folder)
 else:
+    print("xxxxxxxxxxxxx")
     # Train an agent from scratch
     model = ALGOS[args.algo](env=env, tensorboard_log=tensorboard_log, verbose=1, **hyperparams)
 
@@ -236,7 +248,54 @@ if args.algo == 'sac':
                                                os.path.join(save_path, ENV_ID + "_best"),
                                                verbose=1)})
 
+# Beh
+def check_array(input_array,value):
+    '''
+    Last 5 array exceed certain value
+    '''
+    input_array = input_array[input_array>0]        # Delete all the negative rewards
+    for i in input_array[-5:]:
+        if i < value:
+            return False
+    return True
+
+log_txt = open('log_training.txt',"a")
+start = datetime.datetime.now()
 model.learn(n_timesteps, **kwargs)
+total_episode_reward_store = model.total_episode_reward
+print("Length of episode: {}".format(len(total_episode_reward_store)))
+
+x = 1
+threshold = 2000
+# while(round(float(np.mean(total_episode_reward_store[-5:])), 1) < threshold and not check_array(total_episode_reward_store,threshold)):
+#     x = x + 1
+#     print("Mean of Last 5 episode: {}".format(round(float(np.mean(model.total_episode_reward[-5:])), 1)))
+#     print("Not Hitting the Target! Additional Training for n_timesteps: 5000")
+#     model.learn(n_timesteps, **kwargs)
+#     total_episode_reward_store = np.append(total_episode_reward_store,model.total_episode_reward)
+#     print("Length of episode: {}".format(len(total_episode_reward_store)))
+
+total_episode_reward_store = total_episode_reward_store[total_episode_reward_store>0]       # Delete all the negative rewards
+end = datetime.datetime.now()
+print("Training End!")
+
+if vae!=None:
+    vae_used = "Yes"
+else:
+    vae_used = "No"
+
+# a = time.ctime(time.time())
+timestr = time.strftime("%Y%m%d-%H%M%S")
+
+if args.algo == 'ddpg':
+    np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
+else:
+    np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
+
+log_txt.write("\n{} || {} || VAE: {} || n_timesteps: {} || Training time: {}\n".format(time.ctime(time.time()),args.algo,vae_used,x*args.n_timesteps,end-start))
+log_txt.close()
+
+# Beh
 
 if args.teleop:
     env.wait()
@@ -252,7 +311,7 @@ else:
 
 print("Saving model to {}".format(save_path))
 # Save trained model
-model.save(os.path.join(save_path, ENV_ID))
+model.save(os.path.join(save_path, ENV_ID),cloudpickle = True)
 # Save hyperparams
 with open(os.path.join(params_path, 'config.yml'), 'w') as f:
     yaml.dump(saved_hyperparams, f)
