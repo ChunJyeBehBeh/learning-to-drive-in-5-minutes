@@ -1,4 +1,4 @@
-# Raw camera input
+ # Raw camera input
 CAMERA_HEIGHT = 120
 CAMERA_WIDTH = 160
 CAMERA_RESOLUTION = (CAMERA_WIDTH, CAMERA_HEIGHT)
@@ -14,6 +14,8 @@ N_CHANNELS = 3
 INPUT_DIM = (IMAGE_HEIGHT, IMAGE_WIDTH, N_CHANNELS)
 
 # Reward parameters
+# THROTTLE_REWARD_WEIGHT = 0.3
+# JERK_REWARD_WEIGHT = 0.2
 THROTTLE_REWARD_WEIGHT = 0.1
 JERK_REWARD_WEIGHT = 0.0
 
@@ -30,7 +32,7 @@ MAX_STEERING = 1
 MIN_STEERING = - MAX_STEERING
 
 # Simulation config
-MIN_THROTTLE = 0.4
+MIN_THROTTLE = 0.3
 # max_throttle: 0.6 for level 0 and 0.5 for level 1
 MAX_THROTTLE = 0.6
 # Number of past commands to concatenate with the input
@@ -50,3 +52,7 @@ SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
 # DEBUG PARAMS
 # Show input and reconstruction in the teleop panel
 SHOW_IMAGES_TELEOP = True
+
+Image_Raw_Preprocessing = False
+Img_Raw_Preprocess = True
+Grey_Only = False       # True: Edges Detection     False: cv2Grey
