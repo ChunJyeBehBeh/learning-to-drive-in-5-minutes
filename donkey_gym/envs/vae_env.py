@@ -8,10 +8,13 @@ import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from config import INPUT_DIM, MIN_STEERING, MAX_STEERING, JERK_REWARD_WEIGHT, MAX_STEERING_DIFF
+from config import INPUT_DIM, MIN_STEERING, MAX_STEERING, JERK_REWARD_WEIGHT, MAX_STEERING_DIFF, Img_Raw_Preprocess, Debug_RL_Input
 from donkey_gym.core.donkey_proc import DonkeyUnityProcess
 from .donkey_sim import DonkeyUnitySimContoller
+from img_preprocess import preprocess_image
+import cv2
 
+x = 0
 
 class DonkeyVAEEnv(gym.Env):
     """
@@ -57,6 +60,8 @@ class DonkeyVAEEnv(gym.Env):
         self.n_stack = n_stack
         self.stacked_obs = None
 
+        self.preprocess_img_flag = Img_Raw_Preprocess
+
         # Check for env variable
         exe_path = os.environ.get('DONKEY_SIM_PATH')
         if exe_path is None:
@@ -89,13 +94,16 @@ class DonkeyVAEEnv(gym.Env):
                                            high=np.array([MAX_STEERING, 1]), dtype=np.float32)
 
         if vae is None:
+            print("-------------- Image Preprocess: {} --------------".format(self.preprocess_img_flag))
             # Using pixels as input
             if n_command_history > 0:
                 warnings.warn("n_command_history not supported for images"
                               "(it will not be concatenated with the input)")
             self.observation_space = spaces.Box(low=0, high=255,
                                                 shape=INPUT_DIM, dtype=np.uint8)
+
         else:
+            print("-------------- VAE --------------")
             # z latent vector from the VAE (encoded input image)
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
                                                 high=np.finfo(np.float32).max,
@@ -173,6 +181,11 @@ class DonkeyVAEEnv(gym.Env):
             self.stacked_obs[..., -observation.shape[-1]:] = observation
             return self.stacked_obs, reward, done, info
 
+        #Learning from Pixels
+        if self.vae is None:
+            if self.preprocess_img_flag:
+                return preprocess_image(observation),reward,done,info
+            return observation,reward,done,info
         return observation.flatten(), reward, done, info
 
     def clip_steering_diff(self, steering):
@@ -231,6 +244,11 @@ class DonkeyVAEEnv(gym.Env):
             self.stacked_obs[..., -observation.shape[-1]:] = observation
             return self.stacked_obs
 
+        #Learning from Pixels
+        if self.vae is None:
+            if self.preprocess_img_flag:
+                return preprocess_image(observation)
+            return observation
         return observation.flatten()
 
     def render(self, mode='human'):
@@ -247,11 +265,28 @@ class DonkeyVAEEnv(gym.Env):
 
         :return: (np.ndarray, float, bool, dict)
         """
+        global x
+        debug = Debug_RL_Input
         observation, reward, done, info = self.viewer.observe()
         # Learn from Pixels
         if self.vae is None:
+            if self.preprocess_img_flag:
+                if debug:
+                    print("!!!!-> Image Preprocess with No VAE")
+                return preprocess_image(observation), reward, done, info
+            if debug:
+                print("!!!!-> No Image Preprocess with No VAE")
             return observation, reward, done, info
         # Encode the image
+        if self.preprocess_img_flag:
+            if debug:
+                print("!!!!-> Image Preprocess with VAE ")
+                print("Input shape to VAE model: {}".format(observation.shape))
+                cv2.imwrite("RL_input\{}.jpg".format(x),observation)
+                x+=1
+            return self.vae.encode(preprocess_image(observation)), reward, done, info
+        if debug:
+            print("!!!!->No Image Preprocess with VAE ")
         return self.vae.encode(observation), reward, done, info
 
     def close(self):
