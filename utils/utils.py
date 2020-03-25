@@ -67,7 +67,7 @@ class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
                                                layers=[32,32,32,32],
-                                               feature_extraction="mlp",
+                                               feature_extraction="cnn",
                                                layer_norm=True)
 
 
@@ -268,7 +268,7 @@ def create_callback(algo, save_path, verbose=1):
     :param verbose: (int)
     :return: (function) the callback function
     """
-    if algo != 'sac':
+    if algo == 'ppo2':
         raise NotImplementedError("Callback creation not implemented yet for {}".format(algo))
 
     def sac_callback(_locals, _globals):
@@ -288,8 +288,32 @@ def create_callback(algo, save_path, verbose=1):
         if mean_reward > best_mean_reward:
             if verbose >= 1:
                 print("Saving best model")
-            _locals['self'].save(save_path)
+            _locals['self'].save(save_path,cloudpickle=True)
+            best_mean_reward = mean_reward
+    def ddpg_callback(_locals, _globals):
+        """
+        Callback for saving best model when using SAC.
+
+        :param _locals: (dict)
+        :param _globals: (dict)
+        :return: (bool) If False: stop training
+        """
+        global best_mean_reward
+        self_ = _locals['self']
+        episode_rewards = self_.total_episode_reward
+        if len(episode_rewards[-101:-1]) == 0:
+            return True
+        else:
+            mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
+        if mean_reward > best_mean_reward:
+            if verbose >= 1:
+                print("Saving best model")
+            _locals['self'].save(save_path,cloudpickle=True)
             best_mean_reward = mean_reward
 
         return True
-    return sac_callback
+
+    if algo == 'sac':
+      return sac_callback
+    if algo == 'ddpg':
+      return ddpg_callback

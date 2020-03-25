@@ -26,6 +26,12 @@ from teleop.recorder import Recorder
 import time
 import datetime
 
+sim_path = "E:\BEH FYP\projects\donkey_window\DonkeySim.exe"
+os.environ['DONKEY_SIM_PATH'] = sim_path
+os.environ['DONKEY_SIM_PORT'] = '9091'
+os.environ['DONKEY_SIM_HEADLESS'] = '1'
+# os.environ["DONKEY_SIM_HEADLESS"] = "True"
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='log', type=str)
 parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training',
@@ -41,7 +47,7 @@ parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, de
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=50)
-parser.add_argument('--level', help='Level index', type=int, default=0)
+parser.add_argument('--level', help='Level index', type=int, default=3)
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
 parser.add_argument('--teleop', action='store_true', default=False,
@@ -243,7 +249,7 @@ kwargs = {}
 if args.log_interval > -1:
     kwargs = {'log_interval': args.log_interval}
 
-if args.algo == 'sac':
+if args.algo == 'sac' or args.algo == 'ddpg':
     kwargs.update({'callback': create_callback(args.algo,
                                                os.path.join(save_path, ENV_ID + "_best"),
                                                verbose=1)})

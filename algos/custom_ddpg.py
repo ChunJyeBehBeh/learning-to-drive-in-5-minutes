@@ -8,6 +8,7 @@ from mpi4py import MPI
 from stable_baselines import logger
 from stable_baselines.ddpg.ddpg import DDPG
 from stable_baselines.common import TensorboardWriter
+import cv2
 
 class DDPGWithVAE(DDPG):
     """
@@ -69,11 +70,12 @@ class DDPGWithVAE(DDPG):
                             self.env.render()
                         episode_reward += reward
                         episode_step += 1
-
+                        
                         if print_freq > 0 and episode_step % print_freq == 0 and episode_step > 0:
                             print("{} steps".format(episode_step))
 
                         # Book-keeping.
+                        # cv2.imwrite("TEST\{}.jpg".format(step),obs)
                         self._store_transition(obs, action, reward, new_obs, done)
 
                         obs = new_obs

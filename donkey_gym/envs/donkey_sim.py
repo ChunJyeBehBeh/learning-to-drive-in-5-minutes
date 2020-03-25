@@ -128,6 +128,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.original_image = None
         self.last_obs = None
         self.last_throttle = 0.0
+        self.last_steering = 0.0
         # Disabled: hit was used to end episode when bumping into an object
         self.hit = "none"
         # Cross track error
@@ -211,6 +212,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
 
         throttle = action[1]
         self.steering = action[0]
+        self.last_steering = self.steering
         self.last_throttle = throttle
         self.current_step += 1
 
@@ -260,7 +262,9 @@ class DonkeyUnitySimHandler(IMesgHandler):
         if abs(self.cte) > self.max_cte_error:
             return -1.0
 
-        return 1.0 - (abs(self.cte) / self.max_cte_error)
+        # return 1.0 - (abs(self.cte) / self.max_cte_error) + 1 - abs(self.last_steering-self.steering)/2
+        return 1.0 - (abs(self.cte) / self.max_cte_error) 
+
 
     # ------ Socket interface ----------- #
 

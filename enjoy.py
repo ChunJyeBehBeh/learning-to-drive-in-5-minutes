@@ -34,7 +34,7 @@ parser.add_argument('--reward-log', help='Where to log reward', default='', type
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
 parser.add_argument('-best', '--best-model', action='store_true', default=False,
                     help='Use best saved model of that experiment (if it exists)')
-parser.add_argument('--level', help='Level index', type=int, default=0)
+parser.add_argument('--level', help='Level index', type=int, default=3)
 args = parser.parse_args()
 
 algo = args.algo
