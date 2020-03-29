@@ -14,7 +14,7 @@ import yaml
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, OrnsteinUhlenbeckActionNoise
-from stable_baselines.ppo2.ppo2 import constfn
+from stable_baselines.common.schedules import constfn
 from stable_baselines.gail import ExpertDataset
 
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
@@ -47,7 +47,7 @@ parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, de
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=50)
-parser.add_argument('--level', help='Level index', type=int, default=3)
+parser.add_argument('--level', help='Level index', type=int, default=0)
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
 parser.add_argument('--teleop', action='store_true', default=False,
@@ -290,17 +290,17 @@ if vae!=None:
 else:
     vae_used = "No"
 
-# a = time.ctime(time.time())
 timestr = time.strftime("%Y%m%d-%H%M%S")
 
-if args.algo == 'ddpg':
-    np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
-else:
-    np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
+value_to_save ={'total_episode_reward_store':total_episode_reward_store,
+                'throttle_mean':model.throttle_mean,
+                'throttle_min_max':model.throttle_min_max,
+                'steering_diff':model.steering_diff}
+
+np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),**value_to_save)
 
 log_txt.write("\n{} || {} || VAE: {} || n_timesteps: {} || Training time: {}\n".format(time.ctime(time.time()),args.algo,vae_used,x*args.n_timesteps,end-start))
 log_txt.close()
-
 # Beh
 
 if args.teleop:

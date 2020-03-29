@@ -141,6 +141,9 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.speed = 0
         self.steering = None
 
+        self.last_steering = 0.0
+        self.steering_diff = 0.0
+
         # Define which method should be called
         # for each type of message
         self.fns = {'telemetry': self.on_telemetry,
@@ -211,8 +214,11 @@ class DonkeyUnitySimHandler(IMesgHandler):
             print("take_action")
 
         throttle = action[1]
+        
         self.steering = action[0]
+        self.steering_diff = self.steering - self.last_steering
         self.last_steering = self.steering
+
         self.last_throttle = throttle
         self.current_step += 1
 
@@ -263,6 +269,8 @@ class DonkeyUnitySimHandler(IMesgHandler):
             return -1.0
 
         # return 1.0 - (abs(self.cte) / self.max_cte_error) + 1 - abs(self.last_steering-self.steering)/2
+        # return 1 -abs(self.steering_diff)/2
+
         return 1.0 - (abs(self.cte) / self.max_cte_error) 
 
 

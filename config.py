@@ -54,5 +54,5 @@ SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
 SHOW_IMAGES_TELEOP = True
 
 Debug_RL_Input = False
-Img_Raw_Preprocess = True
-Edges_Detection = True       # True: Edges Detection     False: cv2Grey
+Img_Raw_Preprocess = False
+Edges_Detection = False       # True: Edges Detection     False: cv2Grey

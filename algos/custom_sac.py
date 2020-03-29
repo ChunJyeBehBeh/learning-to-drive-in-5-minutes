@@ -73,6 +73,13 @@ class SACWithVAE(SAC):
             self.episode_reward = np.zeros((1,))
             self.total_episode_reward = np.zeros((1,))
 
+            self.throttle_episode_store = np.array([])
+            self.steering_episode_store = np.array([])
+
+            self.throttle_min_max = np.array([])
+            self.throttle_mean = np.array([])
+            self.steering_diff = np.array([])
+
             ep_info_buf = deque(maxlen=100)
             ep_len = 0
             self.n_updates = 0
@@ -118,6 +125,9 @@ class SACWithVAE(SAC):
                 # Debug Purpose: Check the input shape that store into replay_buffer
                 # print(obs.shape)
                 # cv2.imwrite("TEST/{}.jpg".format(step),obs)
+                
+                self.steering_episode_store = np.append(self.steering_episode_store,action[0])
+                self.throttle_episode_store = np.append(self.throttle_episode_store,action[1])
 
                 # Store transition in the replay buffer.
                 self.replay_buffer.add(obs, action, reward, new_obs, float(done))
@@ -148,6 +158,13 @@ class SACWithVAE(SAC):
                     if not (isinstance(self.env, VecEnv) or is_teleop_env):
                         obs = self.env.reset()
 
+                    self.throttle_min_max = np.append(self.throttle_min_max,[np.amin(self.throttle_episode_store),np.amax(self.throttle_episode_store)])
+                    self.throttle_mean = np.append(self.throttle_mean,np.sum(self.throttle_episode_store)/ep_len)
+                    self.throttle_episode_store = 0.0
+
+                    self.steering_diff = np.append(self.steering_diff,np.sum(np.diff(self.steering_episode_store,axis=0)))
+                    self.steering_episode_store = 0.0
+                    
                     print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
                     self.total_episode_reward = np.append(self.total_episode_reward,episode_rewards[-1])
                     episode_rewards.append(0.0)
