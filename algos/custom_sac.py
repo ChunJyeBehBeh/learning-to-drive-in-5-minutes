@@ -162,7 +162,7 @@ class SACWithVAE(SAC):
                     self.throttle_mean = np.append(self.throttle_mean,np.sum(self.throttle_episode_store)/ep_len)
                     self.throttle_episode_store = 0.0
 
-                    self.steering_diff = np.append(self.steering_diff,np.sum(np.diff(self.steering_episode_store,axis=0)))
+                    self.steering_diff = np.append(self.steering_diff,np.sum(abs(np.diff(self.steering_episode_store,axis=0)))/ep_len)
                     self.steering_episode_store = 0.0
                     
                     print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
@@ -176,6 +176,8 @@ class SACWithVAE(SAC):
                         print("Waiting for teleop")
                         obs = self.env.wait_for_teleop_reset()
                     self.env.reset()
+                    self.env.reset()
+
 
                 # Log losses and entropy, useful for monitor training
                 if len(mb_infos_vals) > 0:

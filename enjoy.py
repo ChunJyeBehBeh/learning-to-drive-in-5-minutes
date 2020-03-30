@@ -1,11 +1,12 @@
 # Code adapted from https://github.com/araffin/rl-baselines-zoo
 # Author: Antonin Raffin
-# python enjoy.py --algo ddpg -vae vae-level-0-dim-32.pkl --exp-id 1 -n 5000
+# python enjoy.py --algo sac -vae vae-level-0-dim-32.pkl --exp-id 1 -n 5000
 # python enjoy.py --algo sac --exp-id 15 -n 5000
 # python enjoy.py --algo ddpg -vae logs/vae-64.pkl --exp-id 24 -n 5000
 import argparse
 import os
 import time
+import random
 
 import gym
 import numpy as np
@@ -34,7 +35,7 @@ parser.add_argument('--reward-log', help='Where to log reward', default='', type
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
 parser.add_argument('-best', '--best-model', action='store_true', default=False,
                     help='Use best saved model of that experiment (if it exists)')
-parser.add_argument('--level', help='Level index', type=int, default=3)
+parser.add_argument('--level', help='Level index', type=int, default=0)
 args = parser.parse_args()
 
 algo = args.algo
@@ -85,24 +86,45 @@ if args.verbose >= 1:
 
 running_reward = 0.0
 ep_len = 0
-for _ in range(args.n_timesteps):
+throttle_store = np.array([])
+steering_store = np.array([])
+
+for step in range(args.n_timesteps):
     action, _ = model.predict(obs, deterministic=deterministic)
     # Clip Action to avoid out of bound errors
     if isinstance(env.action_space, gym.spaces.Box):
         action = np.clip(action, env.action_space.low, env.action_space.high)
+    
+    throttle_store = np.append(throttle_store,action[0][0])
+    steering_store = np.append(steering_store,action[0][1])
     obs, reward, done, infos = env.step(action)
     if not args.no_render:
         env.render('human')
     running_reward += reward[0]
     ep_len += 1
 
-    if done and args.verbose >= 1:
+    if done and args.verbose >= 1 or step+1 == args.n_timesteps:
         # NOTE: for env using VecNormalize, the mean reward
         # is a normalized reward when `--norm_reward` flag is passed
         print("Episode Reward: {:.2f}".format(running_reward))
         print("Episode Length", ep_len)
+
+        value_to_save = {'throttle':throttle_store,
+                            'steering':steering_store
+        }
+        np.savez("result_processing\\result_{}".format(args.exp_id),**value_to_save)
+
+        if(step+1<args.n_timesteps):
+            print("Episode stop! Comment the [break] in if done to test more than one episode!")       
+        
         running_reward = 0.0
         ep_len = 0
+        
+        # https://github.com/tleyden/learning-to-drive-in-5-minutes/commit/f32592be64238509d595b798b37402000fce9444
+        # print("Regenerating track")
+        # donkeyEnv = env.envs[0].env
+        # road_styles = range(5)
+        # donkeyEnv.regen_road(rand_seed=int(time.time()), road_style=random.choice(road_styles))
 
 env.reset()
 env.envs[0].env.exit_scene()
