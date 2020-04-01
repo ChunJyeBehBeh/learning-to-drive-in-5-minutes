@@ -21,22 +21,12 @@ class PPO2WithVAE(PPO2):
         self.learning_rate = get_schedule_fn(self.learning_rate)
         self.cliprange = get_schedule_fn(self.cliprange)
 
-<<<<<<< HEAD
         with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name) as writer:
             self._setup_learn()
-=======
-
-        with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name, new_tb_log) as writer:
-            # self._setup_learn(seed)
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 
             runner = Runner(env=self.env, model=self, n_steps=self.n_steps, gamma=self.gamma, lam=self.lam)
             self.episode_reward = np.zeros((self.n_envs,))
             self.total_episode_reward = np.zeros((1,))
-<<<<<<< HEAD
-
-=======
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 
             ep_info_buf = deque(maxlen=100)
             t_first_start = time.time()
@@ -171,10 +161,6 @@ class Runner(AbstractEnvRunner):
             if self.dones:
                 print("Episode finished. Reward: {:.2f} {} Steps".format(np.sum(mb_rewards), len(mb_rewards)))
                 self.total_episode_reward = np.append(self.total_episode_reward,mb_rewards)
-<<<<<<< HEAD
-=======
-
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
                 if len(mb_rewards) >= self.n_steps:
                     break
 

@@ -36,7 +36,7 @@ MIN_THROTTLE = 0.3
 # max_throttle: 0.6 for level 0 and 0.5 for level 1
 MAX_THROTTLE = 0.6
 # Number of past commands to concatenate with the input
-N_COMMAND_HISTORY = 20
+N_COMMAND_HISTORY = 0
 # Max cross track error (used in normal mode to reset the car)
 MAX_CTE_ERROR = 3
 
@@ -53,8 +53,6 @@ SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
 # Show input and reconstruction in the teleop panel
 SHOW_IMAGES_TELEOP = True
 
-Debug_RL_Input = False
+Debug_RL_Input = True
 Img_Raw_Preprocess = True
 Grey_Only = False       # False: Edges Detection     True: cv2Grey
-Img_Raw_Preprocess = False
-Edges_Detection = False       # True: Edges Detection     False: cv2Grey

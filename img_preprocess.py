@@ -22,9 +22,6 @@ def preprocess_image(image):
     global x
     grey_only = Grey_Only
 
-    global x
-    grey_only = not Edges_Detection
-
     if grey_only:
         grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         grey = np.stack((grey,)*3, axis=-1)

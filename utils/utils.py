@@ -66,12 +66,9 @@ class CustomSACPolicy(SACPolicy):
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
-
                                                layers=[64,64,64,64],
-                                               feature_extraction="mlp",
+                                               feature_extraction="cnn",
                                                layer_norm=True)
-
-                                            #    layers=[64,64,64,64],
 
 register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
 register_policy('LargeSACPolicy', LargeSACPolicy)

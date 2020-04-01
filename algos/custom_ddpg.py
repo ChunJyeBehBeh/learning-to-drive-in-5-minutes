@@ -9,6 +9,7 @@ from stable_baselines import logger
 from stable_baselines.ddpg.ddpg import DDPG
 from stable_baselines.common import TensorboardWriter
 import cv2
+from config import Debug_RL_Input
 
 class DDPGWithVAE(DDPG):
     """
@@ -84,7 +85,8 @@ class DDPGWithVAE(DDPG):
                             print("{} steps".format(episode_step))
 
                         # Book-keeping.
-                        # cv2.imwrite("TEST\{}.jpg".format(step),obs)
+                        if Debug_RL_Input:
+                            cv2.imwrite("TEST\{}.jpg".format(step),obs)
                         
                         if(action.shape[0]==2):
                             self.steering_episode_store = np.append(self.steering_episode_store,action[0])

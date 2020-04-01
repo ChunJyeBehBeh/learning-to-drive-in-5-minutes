@@ -115,12 +115,7 @@ class SACWithVAE(SAC):
                 if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
                     print("{} steps".format(ep_len))
 
-<<<<<<< HEAD
                 # print("Input Shape to replay_buffer: {}".format(obs.shape))
-=======
-                # Debug Purpose: Check the input shape that store into replay_buffer
-                # print(obs.shape)
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
                 # cv2.imwrite("TEST/{}.jpg".format(step),obs)
 
                 # Store transition in the replay buffer.

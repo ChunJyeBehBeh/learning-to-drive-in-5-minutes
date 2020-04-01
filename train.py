@@ -52,7 +52,6 @@ parser.add_argument('--seed', help='Random generator seed', type=int, default=50
 
 parser.add_argument('--level', help='Level index', type=int, default=0)
 
-parser.add_argument('--level', help='Level index', type=int, default=0)
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
 parser.add_argument('--teleop', action='store_true', default=False,
