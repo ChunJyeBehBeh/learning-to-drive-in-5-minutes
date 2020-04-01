@@ -57,9 +57,11 @@ class VAEController:
         :param raw_image: (np.ndarray) BGR image
         """
         r = ROI
+        
         # Crop image
         im = raw_image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-        return self.encode(im)
+        
+        return self.encode(raw_image)
 
     def encode(self, observation):
         assert observation.shape == self.input_dimension, "{} != {}".format(observation.shape, self.input_dimension)
@@ -80,6 +82,7 @@ class VAEController:
         self.target_vae.save(path)
 
     def load(self, path):
+        print("Load pretrain model!")
         self.target_vae = ConvVAE.load(path)
         self.z_size = self.target_vae.z_size
 

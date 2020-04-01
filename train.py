@@ -14,7 +14,8 @@ import yaml
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, OrnsteinUhlenbeckActionNoise
-from stable_baselines.ppo2.ppo2 import constfn
+# from stable_baselines.ppo2.ppo2 import constfn
+from stable_baselines.common.schedules import constfn
 from stable_baselines.gail import ExpertDataset
 
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
@@ -26,12 +27,15 @@ from teleop.recorder import Recorder
 import time
 import datetime
 
+<<<<<<< HEAD
+=======
 sim_path = "E:\BEH FYP\projects\donkey_window\DonkeySim.exe"
 os.environ['DONKEY_SIM_PATH'] = sim_path
 os.environ['DONKEY_SIM_PORT'] = '9091'
 os.environ['DONKEY_SIM_HEADLESS'] = '1'
 # os.environ["DONKEY_SIM_HEADLESS"] = "True"
 
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 parser = argparse.ArgumentParser()
 parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='log', type=str)
 parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training',
@@ -47,7 +51,11 @@ parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, de
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=50)
+<<<<<<< HEAD
+parser.add_argument('--level', help='Level index', type=int, default=0)
+=======
 parser.add_argument('--level', help='Level index', type=int, default=3)
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
 parser.add_argument('--teleop', action='store_true', default=False,
@@ -249,7 +257,11 @@ kwargs = {}
 if args.log_interval > -1:
     kwargs = {'log_interval': args.log_interval}
 
+<<<<<<< HEAD
+if args.algo == 'sac' or args.algo == 'ddpg' or args.algo == 'ppo2':
+=======
 if args.algo == 'sac' or args.algo == 'ddpg':
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
     kwargs.update({'callback': create_callback(args.algo,
                                                os.path.join(save_path, ENV_ID + "_best"),
                                                verbose=1)})
@@ -290,11 +302,23 @@ if vae!=None:
 else:
     vae_used = "No"
 
+<<<<<<< HEAD
+timestr = time.strftime("%Y%m%d-%H%M%S")
+
+if args.algo == 'ddpg':
+    value_to_save ={'total_episode_reward_store':total_episode_reward_store,
+                'throttle_mean':model.throttle_mean,
+                'throttle_min_max':model.throttle_min_max,
+                'steering_diff':model.steering_diff}
+
+    np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),**value_to_save)
+=======
 # a = time.ctime(time.time())
 timestr = time.strftime("%Y%m%d-%H%M%S")
 
 if args.algo == 'ddpg':
     np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 else:
     np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
 

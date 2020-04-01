@@ -3,13 +3,21 @@ from matplotlib import pyplot as plt
 import numpy as np
 import os
 import glob
+<<<<<<< HEAD
+from config import Grey_Only
+=======
 from config import Edges_Detection
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 
 '''
 road = 50   
 track= 40   (desert)
 '''
+<<<<<<< HEAD
+ROI_y = 30
+=======
 ROI_y = 50
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 x=0
 
 def detect_edges(image, low_threshold, high_threshold):
@@ -17,8 +25,13 @@ def detect_edges(image, low_threshold, high_threshold):
 
     
 def preprocess_image(image):
+<<<<<<< HEAD
+    global x
+    grey_only = Grey_Only
+=======
     grey_only = not Edges_Detection
     global x
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 
     if grey_only:
         grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

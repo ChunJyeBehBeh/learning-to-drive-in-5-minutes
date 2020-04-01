@@ -1,9 +1,10 @@
 """
 Train a VAE model using saved images in a folder
+
+python -m vae.train --n-epochs 100 --verbose 1 --z-size 64 -f path-to-record/simulator_test/
 """
 import argparse
 import os
-import time
 
 import cv2
 import numpy as np
@@ -15,106 +16,131 @@ from vae.controller import VAEController
 from .data_loader import DataLoader
 from .model import ConvVAE
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--folders', help='Path to folders containing images for training', type=str,
-                    nargs='+', required=True)
-parser.add_argument('--z-size', help='Latent space', type=int, default=512)
-parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
-parser.add_argument('--n-samples', help='Max number of samples', type=int, default=-1)
-parser.add_argument('--batch-size', help='Batch size', type=int, default=64)
-parser.add_argument('--learning-rate', help='Learning rate', type=float, default=1e-4)
-parser.add_argument('--kl-tolerance', help='KL tolerance (to cap KL loss)', type=float, default=0.5)
-parser.add_argument('--beta', help='Weight for kl loss', type=float, default=1.0)
-parser.add_argument('--n-epochs', help='Number of epochs', type=int, default=10)
-parser.add_argument('--verbose', help='Verbosity', type=int, default=1)
-args = parser.parse_args()
+import matplotlib.pyplot as plt
 
-set_global_seeds(args.seed)
+if __name__ == '__main__':
 
-folders, images = [], []
-for folder in args.folders:
-    if not folder.endswith('/'):
-        folder += '/'
-    folders.append(folder)
-    images_ = [folder + im for im in os.listdir(folder) if im.endswith('.jpg')]
-    print("{}: {} images".format(folder, len(images_)))
-    images.append(images_)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--folder', help='Path to a folder containing images for training', type=str,
+                        default='logs/recorded_data/')
+    parser.add_argument('--z-size', help='Latent space', type=int, default=512)
+    parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
+    parser.add_argument('--n-samples', help='Max number of samples', type=int, default=-1)
+    parser.add_argument('--batch-size', help='Batch size', type=int, default=64)
+    parser.add_argument('--learning-rate', help='Learning rate', type=float, default=1e-4)
+    parser.add_argument('--kl-tolerance', help='KL tolerance (to cap KL loss)', type=float, default=0.5)
+    parser.add_argument('--beta', help='Weight for kl loss', type=float, default=1.0)
+    parser.add_argument('--n-epochs', help='Number of epochs', type=int, default=10)
+    parser.add_argument('--verbose', help='Verbosity', type=int, default=1)
+    args = parser.parse_args()
 
-vae = ConvVAE(z_size=args.z_size,
-              batch_size=args.batch_size,
-              learning_rate=args.learning_rate,
-              kl_tolerance=args.kl_tolerance,
-              beta=args.beta,
-              is_training=True,
-              reuse=False)
+    set_global_seeds(args.seed)
 
+    if not args.folder.endswith('/'):
+        args.folder += '/'
 
-images = np.concatenate(images)
-n_samples = len(images)
+    vae = ConvVAE(z_size=args.z_size,
+                batch_size=args.batch_size,
+                learning_rate=args.learning_rate,
+                kl_tolerance=args.kl_tolerance,
+                beta=args.beta,
+                is_training=True,
+                reuse=False)
 
-if args.n_samples > 0:
-    n_samples = min(n_samples, args.n_samples)
+    images = [im for im in os.listdir(args.folder) if im.endswith('.jpg')]
+    images = np.array(images)
+    n_samples = len(images)
 
-print("{} images".format(n_samples))
+    if args.n_samples > 0:
+        n_samples = min(n_samples, args.n_samples)
 
-# indices for all time steps where the episode continues
-indices = np.arange(n_samples, dtype='int64')
-np.random.shuffle(indices)
+    print("{} images".format(n_samples))
 
-# split indices into minibatches. minibatchlist is a list of lists; each
-# list is the id of the observation preserved through the training
-minibatchlist = [np.array(sorted(indices[start_idx:start_idx + args.batch_size]))
-                 for start_idx in range(0, len(indices) - args.batch_size + 1, args.batch_size)]
+    # indices for all time steps where the episode continues
+    indices = np.arange(n_samples, dtype='int64')
+    np.random.shuffle(indices)
 
-data_loader = DataLoader(minibatchlist, images, n_workers=2)
+    # split indices into minibatches. minibatchlist is a list of lists; each
+    # list is the id of the observation preserved through the training
+    minibatchlist = [np.array(sorted(indices[start_idx:start_idx + args.batch_size]))
+                    for start_idx in range(0, len(indices) - args.batch_size + 1, args.batch_size)]
 
-vae_controller = VAEController(z_size=args.z_size)
-vae_controller.vae = vae
-best_loss = np.inf
-vae_id = int(time.time())
-save_path = "logs/vae-{}_{}.pkl".format(args.z_size, vae_id)
-best_model_path = "logs/vae-{}_{}_best.pkl".format(args.z_size, vae_id)
-os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    data_loader = DataLoader(minibatchlist, images, n_workers=2, folder=args.folder)
 
-for epoch in range(args.n_epochs):
-    pbar = tqdm(total=len(minibatchlist))
-    for obs, target_obs in data_loader:
-        feed = {vae.input_tensor: obs, vae.target_tensor: target_obs}
-        (train_loss, r_loss, kl_loss, train_step, _) = vae.sess.run([
-            vae.loss,
-            vae.r_loss,
-            vae.kl_loss,
-            vae.global_step,
-            vae.train_op
-        ], feed)
-        pbar.update(1)
-    pbar.close()
-    print("Epoch {:3}/{}".format(epoch + 1, args.n_epochs))
-    print("VAE: optimization step", (train_step + 1), train_loss, r_loss, kl_loss)
+    vae_controller = VAEController(z_size=args.z_size)
+    vae_controller.vae = vae
+    # vae_controller.load("logs/vae-64.pkl")
+    
+    # Book Keeping
+    train_step_list = []
+    train_loss_list = []
+    r_loss_list = []
+    kl_loss_list = []
 
-    # Update params
+    for epoch in range(args.n_epochs):
+        pbar = tqdm(total=len(minibatchlist))
+        for obs in data_loader:
+            feed = {vae.input_tensor: obs}
+            (train_loss, r_loss, kl_loss, train_step, _) = vae.sess.run([
+                vae.loss,
+                vae.r_loss,
+                vae.kl_loss,
+                vae.global_step,
+                vae.train_op
+            ], feed)
+            pbar.update(1)
+        pbar.close()
+        print("Epoch {:3}/{}".format(epoch + 1, args.n_epochs))
+        print("VAE: optimization step", (train_step + 1), train_loss, r_loss, kl_loss)
+
+        train_step_list.append(train_step + 1)
+        train_loss_list.append(train_loss)
+        r_loss_list.append(r_loss)
+        kl_loss_list.append(kl_loss)
+
+        # Update params
+        vae_controller.set_target_params()
+        # Load test image
+        if args.verbose >= 1:
+            image_idx = np.random.randint(n_samples)
+            image_path = args.folder + images[image_idx]
+            image = cv2.imread(image_path)
+            r = ROI
+            im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+            # im =cv2.resize(image,(160,80))
+            encoded = vae_controller.encode(im)
+            reconstructed_image = vae_controller.decode(encoded)[0]
+
+            # image_save = np.concatenate((im,reconstructed_image),axis=1)
+            # cv2.imwrite('path-to-record/train_result/epoch_{}.jpg'.format(epoch),image_save)
+
+            # Plot reconstruction
+            cv2.imwrite('path-to-record/train_result/epoch_{}.jpg'.format(epoch),image)
+            cv2.imwrite('path-to-record/train_result/epoch_{}_a.jpg'.format(epoch),reconstructed_image)
+
+    save_path = "logs/vae-{}".format(args.z_size)
+    print("Saving to {}".format(save_path))
     vae_controller.set_target_params()
+    vae_controller.save(save_path)
 
-    # TODO: use validation set
-    if train_loss < best_loss:
-        best_loss = train_loss
-        print("Saving best model to {}".format(best_model_path))
-        vae_controller.save(best_model_path)
+    value_to_save = { 'train_step_list':train_step_list,
+                    'train_loss_list':train_loss_list,
+                    'r_loss_list':r_loss_list,
+                    'kl_loss_list':kl_loss_list
+    }
+    np.savez("VAE_train.npz",**value_to_save)
+     # Plot Graph
+    assert len(train_step_list) == len(train_loss_list) == len(r_loss_list) == len(kl_loss_list), "Error in len of list when plotting graph"
+    fig, ((ax1, ax2, ax3)) = plt.subplots(1, 3)
+    ax1.plot(train_step_list,train_loss_list)
+    ax1.set_ylabel("Train Loss")
+    ax1.set_xlabel("Step")
+    ax2.plot(train_step_list,r_loss_list)
+    ax2.set_ylabel("Reconstruction Loss")
+    ax2.set_xlabel("Step")
+    ax3.plot(train_step_list,kl_loss_list)
+    ax3.set_ylabel("KL Loss")
+    ax3.set_xlabel("Step")
+    plt.savefig('path-to-record\\result_64.png')
+    plt.show()
 
-    # Load test image
-    if args.verbose >= 1:
-        image_idx = np.random.randint(n_samples)
-        image = cv2.imread(images[image_idx])
-        r = ROI
-        im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-
-        encoded = vae_controller.encode(im)
-        reconstructed_image = vae_controller.decode(encoded)[0]
-        # Plot reconstruction
-        cv2.imshow("Original", image)
-        cv2.imshow("Reconstruction", reconstructed_image)
-        cv2.waitKey(1)
-
-print("Saving to {}".format(save_path))
-vae_controller.set_target_params()
-vae_controller.save(save_path)

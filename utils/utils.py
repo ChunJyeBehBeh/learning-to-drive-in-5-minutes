@@ -66,10 +66,15 @@ class CustomSACPolicy(SACPolicy):
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
+<<<<<<< HEAD
+                                               layers=[32,32],
+=======
                                                layers=[32,32,32,32],
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
                                                feature_extraction="cnn",
                                                layer_norm=True)
 
+                                            #    layers=[64,64,64,64],
 
 register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
 register_policy('LargeSACPolicy', LargeSACPolicy)
@@ -268,8 +273,15 @@ def create_callback(algo, save_path, verbose=1):
     :param verbose: (int)
     :return: (function) the callback function
     """
+<<<<<<< HEAD
+    if algo == 'ppo2' or algo == 'ddpg' or algo == 'sac':
+        pass
+    else:
+=======
     if algo == 'ppo2':
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
         raise NotImplementedError("Callback creation not implemented yet for {}".format(algo))
+
 
     def sac_callback(_locals, _globals):
         """
@@ -289,6 +301,8 @@ def create_callback(algo, save_path, verbose=1):
             if verbose >= 1:
                 print("Saving best model")
             _locals['self'].save(save_path,cloudpickle=True)
+<<<<<<< HEAD
+=======
             best_mean_reward = mean_reward
     def ddpg_callback(_locals, _globals):
         """
@@ -309,11 +323,37 @@ def create_callback(algo, save_path, verbose=1):
             if verbose >= 1:
                 print("Saving best model")
             _locals['self'].save(save_path,cloudpickle=True)
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
             best_mean_reward = mean_reward
+        return True
+        
+    def ddpg_callback(_locals, _globals):
+        """
+        Callback for saving best model when using SAC.
 
+        :param _locals: (dict)
+        :param _globals: (dict)
+        :return: (bool) If False: stop training
+        """
+        global best_mean_reward
+        self_ = _locals['self']
+        episode_rewards = self_.total_episode_reward
+        if len(episode_rewards[-101:-1]) == 0:
+            return True
+        else:
+            mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
+        if mean_reward > best_mean_reward:
+            if verbose >= 1:
+                print("Saving best model")
+            _locals['self'].save(save_path,cloudpickle=True)
+            best_mean_reward = mean_reward
         return True
 
     if algo == 'sac':
       return sac_callback
+<<<<<<< HEAD
+    if algo == 'ddpg' or algo =='ppo2':
+=======
     if algo == 'ddpg':
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
       return ddpg_callback
