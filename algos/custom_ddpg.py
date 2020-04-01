@@ -28,6 +28,15 @@ class DDPGWithVAE(DDPG):
             assert np.all(np.abs(self.env.action_space.low) == self.env.action_space.high)
 
             self.total_episode_reward = np.zeros((1,))
+            self.throttle_min_max = np.array([])
+            self.throttle_mean = np.array([])
+            self.steering_diff = np.array([])
+
+            self.throttle_episode_store = np.array([])
+            self.steering_episode_store = np.array([])
+
+            self.step_episode_store = np.array([])
+
             with self.sess.as_default(), self.graph.as_default():
                 # Prepare everything.
                 self._reset()
@@ -76,6 +85,13 @@ class DDPGWithVAE(DDPG):
 
                         # Book-keeping.
                         # cv2.imwrite("TEST\{}.jpg".format(step),obs)
+                        
+                        if(action.shape[0]==2):
+                            self.steering_episode_store = np.append(self.steering_episode_store,action[0])
+                            self.throttle_episode_store = np.append(self.throttle_episode_store,action[1])
+                        else:
+                            self.steering_episode_store = np.append(self.steering_episode_store,action)
+                            self.throttle_episode_store = np.append(self.throttle_episode_store,0.4)
                         self._store_transition(obs, action, reward, new_obs, done)
 
                         obs = new_obs
@@ -90,6 +106,14 @@ class DDPGWithVAE(DDPG):
 
                             self.total_episode_reward = np.append(self.total_episode_reward,episode_reward)
 
+                            self.throttle_min_max = np.append(self.throttle_min_max,[np.amin(self.throttle_episode_store),np.amax(self.throttle_episode_store)])
+                            self.throttle_episode_store = 0.0
+
+                            self.steering_diff = np.append(self.steering_diff,np.sum(abs(np.diff(self.steering_episode_store,axis=0)))/len(self.steering_episode_store))
+                            self.steering_episode_store = 0.0
+
+                            self.step_episode_store = np.append(self.step_episode_store,episode_step)
+                            
                             # Episode done.
                             episode_reward = 0.
                             episode_step = 0

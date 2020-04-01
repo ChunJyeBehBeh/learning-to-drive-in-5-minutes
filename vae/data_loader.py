@@ -6,8 +6,6 @@ from multiprocessing import Queue, Process
 
 import cv2
 import numpy as np
-import imgaug.augmenters as iaa
-from imgaug.augmenters import Sometimes
 from joblib import Parallel, delayed
 
 from config import IMAGE_WIDTH, IMAGE_HEIGHT, ROI
@@ -80,14 +78,13 @@ def denormalize(x, mode="rl"):
     return (255 * np.clip(x, 0, 1)).astype(np.uint8)
 
 
-def preprocess_image(image, convert_to_rgb=False, normalize=True):
+def preprocess_image(image, convert_to_rgb=False):
     """
     Crop, resize and normalize image.
     Optionnally it also converts the image from BGR to RGB.
 
     :param image: (np.ndarray) image (BGR or RGB)
     :param convert_to_rgb: (bool) whether the conversion to rgb is needed or not
-    :param normalize: (bool) Whether to normalize or not
     :return: (np.ndarray)
     """
     # Crop
@@ -96,48 +93,30 @@ def preprocess_image(image, convert_to_rgb=False, normalize=True):
     image = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
     # Resize
     im = cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT), interpolation=cv2.INTER_AREA)
+    # cv2.imwrite('path-to-record/train_input/test_idx.jpg',im)
+
     # Convert BGR to RGB
     if convert_to_rgb:
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     # Normalize
-    if normalize:
-        im = preprocess_input(im.astype(np.float32), mode="rl")
+    im = preprocess_input(im.astype(np.float32), mode="rl")
 
     return im
 
 
-def get_image_augmenter():
-    """
-    :return: (iaa.Sequential) Image Augmenter
-    """
-    return iaa.Sequential([
-        # TODO: if flipped, reconstruct the flipped one
-        # Sometimes(0.5, iaa.Fliplr(1)),
-        # TODO: add shadows, see: https://markku.ai/post/data-augmentation/
-        Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 2.0))),
-        Sometimes(0.5, iaa.MotionBlur(k=(3, 11), angle=(0, 360))),
-        Sometimes(0.5, iaa.Sharpen(alpha=(0.0, 1.0), lightness=(0.75, 2.0))),
-        Sometimes(0.4, iaa.Add((-15, 15), per_channel=0.5)),
-        Sometimes(0.5, iaa.Multiply((0.6, 1.4), per_channel=0.5)),
-        Sometimes(0.2, iaa.CoarseDropout((0.0, 0.05), size_percent=(0.02, 0.10), per_channel=0.5)),
-        Sometimes(0.5, iaa.ContrastNormalization((0.5, 1.8), per_channel=0.5)),
-        Sometimes(0.1, iaa.AdditiveGaussianNoise(scale=10, per_channel=True))
-    ], random_order=True)
-
-
 class DataLoader(object):
-    def __init__(self, minibatchlist, images_path, n_workers=1,
-                 infinite_loop=True, max_queue_len=4, is_training=False, augment=True):
+    def __init__(self, minibatchlist, images_path, n_workers=1, folder='logs/recorded_data/',
+                 infinite_loop=True, max_queue_len=4, is_training=False):
         """
         A Custom dataloader to preprocessing images and feed them to the network.
 
         :param minibatchlist: ([np.array]) list of observations indices (grouped per minibatch)
         :param images_path: (np.array) Array of path to images
         :param n_workers: (int) number of preprocessing worker (load and preprocess each image)
+        :param folder: (str)
         :param infinite_loop: (bool) whether to have an iterator that can be resetted, set to False, it
         :param max_queue_len: (int) Max number of minibatches that can be preprocessed at the same time
         :param is_training: (bool)
-        :param augment: (bool) Whether to use image augmentation or not
         """
         super(DataLoader, self).__init__()
         self.n_workers = n_workers
@@ -146,11 +125,9 @@ class DataLoader(object):
         self.minibatchlist = minibatchlist
         self.images_path = images_path
         self.shuffle = is_training
+        self.folder = folder
         self.queue = Queue(max_queue_len)
         self.process = None
-        self.augmenter = None
-        if augment:
-            self.augmenter = get_image_augmenter()
         self.start_process()
 
     @staticmethod
@@ -193,50 +170,41 @@ class DataLoader(object):
                     images = self.images_path[self.minibatchlist[minibatch_idx]]
 
                     if self.n_workers <= 1:
-                        batch = [self._make_batch_element(image_path, self.augmenter)
+                        batch = [self._make_batch_element(self.folder, image_path)
                                  for image_path in images]
 
                     else:
-                        batch = parallel(delayed(self._make_batch_element)(image_path, self.augmenter)
+                        batch = parallel(delayed(self._make_batch_element)(self.folder, image_path)
                                          for image_path in images)
 
-
-                    batch_input = np.concatenate([batch_elem[0] for batch_elem in batch], axis=0)
-                    batch_target = np.concatenate([batch_elem[1] for batch_elem in batch], axis=0)
+                    batch = np.concatenate(batch, axis=0)
 
                     if self.shuffle:
-                        self.queue.put((minibatch_idx, batch_input, batch_target))
+                        self.queue.put((minibatch_idx, batch))
                     else:
-                        self.queue.put((batch_input, batch_target))
+                        self.queue.put(batch)
 
                     # Free memory
-                    del batch_input, batch_target, batch
+                    del batch
 
                 self.queue.put(None)
 
     @classmethod
-    def _make_batch_element(cls, image_path, augmenter=None):
+    def _make_batch_element(cls, folder, image_path):
         """
-        :param image_path: (str) path to an image
-        :param augment: (iaa.Sequential) Image augmenter
-        :return: (np.ndarray, np.ndarray)
+        :param image_path: (str) path to an image (without the 'data/' prefix)
+        :return: (np.ndarray)
         """
+        image_path = folder + image_path
+
         im = cv2.imread(image_path)
         if im is None:
             raise ValueError("tried to load {}.jpg, but it was not found".format(image_path))
 
-        target_img = preprocess_image(im)
-        target_img = target_img.reshape((1,) + target_img.shape)
+        im = preprocess_image(im)
 
-        if augmenter is not None:
-            input_img = augmenter.augment_image(preprocess_image(im, normalize=False))
-            # Normalize
-            input_img = preprocess_input(input_img.astype(np.float32), mode="rl")
-            input_img = input_img.reshape((1,) + input_img.shape)
-        else:
-            input_img = target_img.copy()
-
-        return input_img, target_img
+        im = im.reshape((1,) + im.shape)
+        return im
 
     def __len__(self):
         return self.n_minibatches
@@ -256,6 +224,6 @@ class DataLoader(object):
             raise StopIteration
         return val
 
-    def __del__(self):
-        if self.process is not None:
-            self.process.terminate()
+    # def __del__(self):
+    #     if self.process is not None:
+    #         self.process.terminate()

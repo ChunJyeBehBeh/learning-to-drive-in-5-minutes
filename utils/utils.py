@@ -66,8 +66,8 @@ class CustomSACPolicy(SACPolicy):
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
-                                               layers=[32,32,32,32],
-                                               feature_extraction="cnn",
+                                               layers=[64,64,64,64],
+                                               feature_extraction="mlp",
                                                layer_norm=True)
 
 
@@ -118,7 +118,7 @@ def make_env(level=0, seed=0, log_dir=None, vae=None, frame_skip=None,
     def _init():
         set_global_seeds(seed)
         # Change here for the constant throttle
-        env = DonkeyVAEEnv(level=level, frame_skip=frame_skip, vae=vae, const_throttle=None, min_throttle=MIN_THROTTLE,
+        env = DonkeyVAEEnv(level=level, frame_skip=frame_skip, vae=vae, const_throttle=0.4, min_throttle=MIN_THROTTLE,
                            max_throttle=MAX_THROTTLE, max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY,
                            n_stack=n_stack, seed=seed)
         if not teleop:

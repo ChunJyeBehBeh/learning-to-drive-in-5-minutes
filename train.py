@@ -2,6 +2,7 @@
 # Author: Antonin Raffin
 # python train.py --algo sac -vae vae-level-0-dim-32.pkl -n 250000
 # python train.py --algo ddpg -vae vae-level-0-dim-32.pkl -n 250000
+# python train.py --algo ddpg -n 7500000
 # python train.py --algo sac -vae logs/vae-64.pkl -n 250000
 import argparse
 import os
@@ -29,8 +30,7 @@ import datetime
 sim_path = "E:\BEH FYP\projects\donkey_window\DonkeySim.exe"
 os.environ['DONKEY_SIM_PATH'] = sim_path
 os.environ['DONKEY_SIM_PORT'] = '9091'
-os.environ['DONKEY_SIM_HEADLESS'] = '1'
-# os.environ["DONKEY_SIM_HEADLESS"] = "True"
+os.environ['DONKEY_SIM_HEADLESS'] = '0'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='log', type=str)
@@ -47,7 +47,7 @@ parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, de
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=50)
-parser.add_argument('--level', help='Level index', type=int, default=3)
+parser.add_argument('--level', help='Level index', type=int, default=0)
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
 parser.add_argument('--teleop', action='store_true', default=False,
@@ -145,6 +145,8 @@ if 'normalize' in hyperparams.keys():
 
 if 'policy_kwargs' in hyperparams.keys():
     hyperparams['policy_kwargs'] = eval(hyperparams['policy_kwargs'])
+    print("!!!->",eval(hyperparams['policy_kwargs']))
+    exit()
 
 if not args.teleop:
     env = DummyVecEnv([make_env(args.level, args.seed, vae=vae, teleop=args.teleop)])
@@ -290,11 +292,16 @@ if vae!=None:
 else:
     vae_used = "No"
 
-# a = time.ctime(time.time())
 timestr = time.strftime("%Y%m%d-%H%M%S")
 
 if args.algo == 'ddpg':
-    np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
+    value_to_save ={'total_episode_reward_store':total_episode_reward_store,
+                'throttle_mean':model.throttle_mean,
+                'throttle_min_max':model.throttle_min_max,
+                'steering_diff':model.steering_diff,
+                'step_episode_store':model.step_episode_store}
+
+    np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),**value_to_save)
 else:
     np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),total_episode_reward_store)
 

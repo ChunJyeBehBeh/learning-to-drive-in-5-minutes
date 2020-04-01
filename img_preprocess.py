@@ -9,7 +9,7 @@ from config import Edges_Detection
 road = 50   
 track= 40   (desert)
 '''
-ROI_y = 50
+ROI_y = 30
 x=0
 
 def detect_edges(image, low_threshold, high_threshold):
@@ -17,8 +17,8 @@ def detect_edges(image, low_threshold, high_threshold):
 
     
 def preprocess_image(image):
-    grey_only = not Edges_Detection
     global x
+    grey_only = not Edges_Detection
 
     if grey_only:
         grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

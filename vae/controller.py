@@ -80,6 +80,7 @@ class VAEController:
         self.target_vae.save(path)
 
     def load(self, path):
+        print("Load pretrain model!")
         self.target_vae = ConvVAE.load(path)
         self.z_size = self.target_vae.z_size
 

@@ -17,6 +17,7 @@ class DonkeyUnityProcess(object):
         :param headless: (bool)
         :param port: (int)
         """
+        print("!!!!!!!!!!!!!!!!!!!")
         if not os.path.exists(sim_path):
             print(sim_path, "does not exist. not starting sim.")
             return
