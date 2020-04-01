@@ -105,6 +105,7 @@ if __name__ == '__main__':
             image_idx = np.random.randint(n_samples)
             image_path = args.folder + images[image_idx]
             image = cv2.imread(image_path)
+
             r = ROI
             im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
             # im =cv2.resize(image,(160,80))
@@ -118,6 +119,7 @@ if __name__ == '__main__':
             cv2.imwrite('path-to-record/train_result/epoch_{}.jpg'.format(epoch),image)
             cv2.imwrite('path-to-record/train_result/epoch_{}_a.jpg'.format(epoch),reconstructed_image)
 
+
     save_path = "logs/vae-{}".format(args.z_size)
     print("Saving to {}".format(save_path))
     vae_controller.set_target_params()
@@ -129,6 +131,7 @@ if __name__ == '__main__':
                     'kl_loss_list':kl_loss_list
     }
     np.savez("VAE_train.npz",**value_to_save)
+
      # Plot Graph
     assert len(train_step_list) == len(train_loss_list) == len(r_loss_list) == len(kl_loss_list), "Error in len of list when plotting graph"
     fig, ((ax1, ax2, ax3)) = plt.subplots(1, 3)

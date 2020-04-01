@@ -66,12 +66,9 @@ class CustomSACPolicy(SACPolicy):
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
-<<<<<<< HEAD
-                                               layers=[32,32],
-=======
-                                               layers=[32,32,32,32],
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
-                                               feature_extraction="cnn",
+
+                                               layers=[64,64,64,64],
+                                               feature_extraction="mlp",
                                                layer_norm=True)
 
                                             #    layers=[64,64,64,64],
@@ -123,7 +120,7 @@ def make_env(level=0, seed=0, log_dir=None, vae=None, frame_skip=None,
     def _init():
         set_global_seeds(seed)
         # Change here for the constant throttle
-        env = DonkeyVAEEnv(level=level, frame_skip=frame_skip, vae=vae, const_throttle=None, min_throttle=MIN_THROTTLE,
+        env = DonkeyVAEEnv(level=level, frame_skip=frame_skip, vae=vae, const_throttle=0.4, min_throttle=MIN_THROTTLE,
                            max_throttle=MAX_THROTTLE, max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY,
                            n_stack=n_stack, seed=seed)
         if not teleop:
@@ -273,13 +270,9 @@ def create_callback(algo, save_path, verbose=1):
     :param verbose: (int)
     :return: (function) the callback function
     """
-<<<<<<< HEAD
     if algo == 'ppo2' or algo == 'ddpg' or algo == 'sac':
         pass
     else:
-=======
-    if algo == 'ppo2':
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
         raise NotImplementedError("Callback creation not implemented yet for {}".format(algo))
 
 
@@ -301,29 +294,6 @@ def create_callback(algo, save_path, verbose=1):
             if verbose >= 1:
                 print("Saving best model")
             _locals['self'].save(save_path,cloudpickle=True)
-<<<<<<< HEAD
-=======
-            best_mean_reward = mean_reward
-    def ddpg_callback(_locals, _globals):
-        """
-        Callback for saving best model when using SAC.
-
-        :param _locals: (dict)
-        :param _globals: (dict)
-        :return: (bool) If False: stop training
-        """
-        global best_mean_reward
-        self_ = _locals['self']
-        episode_rewards = self_.total_episode_reward
-        if len(episode_rewards[-101:-1]) == 0:
-            return True
-        else:
-            mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
-        if mean_reward > best_mean_reward:
-            if verbose >= 1:
-                print("Saving best model")
-            _locals['self'].save(save_path,cloudpickle=True)
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
             best_mean_reward = mean_reward
         return True
         
@@ -351,9 +321,5 @@ def create_callback(algo, save_path, verbose=1):
 
     if algo == 'sac':
       return sac_callback
-<<<<<<< HEAD
     if algo == 'ddpg' or algo =='ppo2':
-=======
-    if algo == 'ddpg':
->>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
       return ddpg_callback

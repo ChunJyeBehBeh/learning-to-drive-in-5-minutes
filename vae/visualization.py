@@ -41,6 +41,20 @@ if __name__ == '__main__':
     print("Done Loading Parameters! Start Visualization!")
 
     for i in range(args.n_samples):
+        #Load test image
+        # image_idx = np.random.randint(n_samples)
+        # image_path = args.folder + images[image_idx]
+        # image = cv2.imread(image_path)
+        # r = ROI
+        # im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+        
+        # encoded = vae.encode(image)
+        # reconstructed_image = vae.decode(encoded)[0]
+
+        # #Save Image
+        # image_save = np.concatenate((image,reconstructed_image),axis=1)
+        # cv2.imwrite('path-to-record/test_result/test_idx_{}.jpg'.format(image_idx),image_save)
+
         image_idx = np.random.randint(n_samples)
         image_path = args.folder + images[image_idx]
         image = cv2.imread(image_path)
@@ -50,6 +64,7 @@ if __name__ == '__main__':
         print(image.shape,reconstructed_image.shape)
         image_save = np.concatenate((image,reconstructed_image),axis=1)
         cv2.imwrite('path-to-record/test_result/test_idx_{}.jpg'.format(image_idx),image_save)
+
 
     print("Finished")
         
