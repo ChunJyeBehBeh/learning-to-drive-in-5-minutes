@@ -67,9 +67,8 @@ class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
                                                layers=[64,64,64,64],
-                                               feature_extraction="mlp",
+                                               feature_extraction="cnn",
                                                layer_norm=True)
-
 
 register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
 register_policy('LargeSACPolicy', LargeSACPolicy)
@@ -268,8 +267,11 @@ def create_callback(algo, save_path, verbose=1):
     :param verbose: (int)
     :return: (function) the callback function
     """
-    if algo == 'ppo2':
+    if algo == 'ppo2' or algo == 'ddpg' or algo == 'sac':
+        pass
+    else:
         raise NotImplementedError("Callback creation not implemented yet for {}".format(algo))
+
 
     def sac_callback(_locals, _globals):
         """
@@ -290,6 +292,8 @@ def create_callback(algo, save_path, verbose=1):
                 print("Saving best model")
             _locals['self'].save(save_path,cloudpickle=True)
             best_mean_reward = mean_reward
+        return True
+        
     def ddpg_callback(_locals, _globals):
         """
         Callback for saving best model when using SAC.
@@ -310,10 +314,9 @@ def create_callback(algo, save_path, verbose=1):
                 print("Saving best model")
             _locals['self'].save(save_path,cloudpickle=True)
             best_mean_reward = mean_reward
-
         return True
 
     if algo == 'sac':
       return sac_callback
-    if algo == 'ddpg':
+    if algo == 'ddpg' or algo =='ppo2':
       return ddpg_callback

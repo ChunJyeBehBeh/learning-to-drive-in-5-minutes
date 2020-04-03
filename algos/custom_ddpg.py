@@ -9,6 +9,7 @@ from stable_baselines import logger
 from stable_baselines.ddpg.ddpg import DDPG
 from stable_baselines.common import TensorboardWriter
 import cv2
+from config import Debug_RL_Input
 
 class DDPGWithVAE(DDPG):
     """
@@ -84,7 +85,8 @@ class DDPGWithVAE(DDPG):
                             print("{} steps".format(episode_step))
 
                         # Book-keeping.
-                        # cv2.imwrite("TEST\{}.jpg".format(step),obs)
+                        if Debug_RL_Input:
+                            cv2.imwrite("TEST\{}.jpg".format(step),obs)
                         
                         if(action.shape[0]==2):
                             self.steering_episode_store = np.append(self.steering_episode_store,action[0])
@@ -107,6 +109,9 @@ class DDPGWithVAE(DDPG):
                             self.total_episode_reward = np.append(self.total_episode_reward,episode_reward)
 
                             self.throttle_min_max = np.append(self.throttle_min_max,[np.amin(self.throttle_episode_store),np.amax(self.throttle_episode_store)])
+                           
+                            self.throttle_mean = np.append(self.throttle_mean,np.sum(self.throttle_episode_store)/len(self.throttle_episode_store))
+
                             self.throttle_episode_store = 0.0
 
                             self.steering_diff = np.append(self.steering_diff,np.sum(abs(np.diff(self.steering_episode_store,axis=0)))/len(self.steering_episode_store))
@@ -120,6 +125,8 @@ class DDPGWithVAE(DDPG):
                             episodes += 1
 
                             self._reset()
+                            self.env.reset()
+                            self.env.reset()
                             obs = self.env.reset()
                             obs = self.env.reset()
                             # Finish rollout on episode finish.

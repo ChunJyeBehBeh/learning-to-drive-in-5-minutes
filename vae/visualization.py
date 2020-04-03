@@ -1,7 +1,7 @@
 """
 Test a trained vae
 
-python -m vae.visualization -vae logs/vae-64.pkl -f path-to-record/simulation_test/ 
+python -m vae.visualization -vae logs/vae-64.pkl -f path-to-record/simulator_test/ 
 """
 import argparse
 import os
@@ -61,9 +61,10 @@ if __name__ == '__main__':
 
         encoded = vae.encode_from_raw_image(image)
         reconstructed_image = vae.decode(encoded)[0]
+        print(image.shape,reconstructed_image.shape)
         image_save = np.concatenate((image,reconstructed_image),axis=1)
         cv2.imwrite('path-to-record/test_result/test_idx_{}.jpg'.format(image_idx),image_save)
 
-    
+
     print("Finished")
         

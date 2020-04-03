@@ -1,8 +1,14 @@
 # Code adapted from https://github.com/araffin/rl-baselines-zoo
 # Author: Antonin Raffin
+<<<<<<< HEAD
+# 
+# python enjoy.py --algo sac --exp-id 15 -n 5000
+# python enjoy.py --algo ddpg --exp-id 24 -n 5000 -vae logs/vae-64.pkl 
+=======
 # python enjoy.py --algo ddpg -vae vae-level-0-dim-32.pkl --exp-id 1 -n 5000
 # python enjoy.py --algo sac --exp-id 15 -n 5000
 # python enjoy.py --algo ddpg -vae logs/vae-64.pkl --exp-id 24 -n 5000
+>>>>>>> cf0d6c15865af342f6810501e15cd8cae47a5beb
 import argparse
 import os
 import time
@@ -32,7 +38,7 @@ parser.add_argument('--norm-reward', action='store_true', default=False,
 parser.add_argument('--seed', help='Random generator seed', type=int, default=41)
 parser.add_argument('--reward-log', help='Where to log reward', default='', type=str)
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
-parser.add_argument('-best', '--best-model', action='store_true', default=False,
+parser.add_argument('-best', '--best-model', action='store_true', default=True,
                     help='Use best saved model of that experiment (if it exists)')
 parser.add_argument('--level', help='Level index', type=int, default=0)
 args = parser.parse_args()

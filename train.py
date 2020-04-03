@@ -15,7 +15,8 @@ import yaml
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, OrnsteinUhlenbeckActionNoise
-from stable_baselines.ppo2.ppo2 import constfn
+# from stable_baselines.ppo2.ppo2 import constfn
+from stable_baselines.common.schedules import constfn
 from stable_baselines.gail import ExpertDataset
 
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
@@ -26,6 +27,7 @@ from teleop.recorder import Recorder
 
 import time
 import datetime
+
 
 sim_path = "E:\BEH FYP\projects\donkey_window\DonkeySim.exe"
 os.environ['DONKEY_SIM_PATH'] = sim_path
@@ -47,7 +49,9 @@ parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, de
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=50)
+
 parser.add_argument('--level', help='Level index', type=int, default=0)
+
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
 parser.add_argument('--teleop', action='store_true', default=False,
@@ -251,7 +255,8 @@ kwargs = {}
 if args.log_interval > -1:
     kwargs = {'log_interval': args.log_interval}
 
-if args.algo == 'sac' or args.algo == 'ddpg':
+if args.algo == 'sac' or args.algo == 'ddpg' or args.algo == 'ppo2':
+
     kwargs.update({'callback': create_callback(args.algo,
                                                os.path.join(save_path, ENV_ID + "_best"),
                                                verbose=1)})

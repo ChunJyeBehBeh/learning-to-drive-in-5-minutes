@@ -1,7 +1,7 @@
 """
 Train a VAE model using saved images in a folder
 
-python -m vae.train --n-epochs 100 --verbose 1 --z-size 64 -f path-to-record/folder/
+python -m vae.train --n-epochs 100 --verbose 1 --z-size 64 -f path-to-record/simulator_test/
 """
 import argparse
 import os
@@ -105,19 +105,32 @@ if __name__ == '__main__':
             image_idx = np.random.randint(n_samples)
             image_path = args.folder + images[image_idx]
             image = cv2.imread(image_path)
-            # r = ROI
-            # im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
-            im =cv2.resize(image,(160,80))
+
+            r = ROI
+            im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+            # im =cv2.resize(image,(160,80))
             encoded = vae_controller.encode(im)
             reconstructed_image = vae_controller.decode(encoded)[0]
 
-            image_save = np.concatenate((im,reconstructed_image),axis=1)
-            cv2.imwrite('path-to-record/train_result/epoch_{}.jpg'.format(epoch),image_save)
+            # image_save = np.concatenate((im,reconstructed_image),axis=1)
+            # cv2.imwrite('path-to-record/train_result/epoch_{}.jpg'.format(epoch),image_save)
+
+            # Plot reconstruction
+            cv2.imwrite('path-to-record/train_result/epoch_{}.jpg'.format(epoch),image)
+            cv2.imwrite('path-to-record/train_result/epoch_{}_a.jpg'.format(epoch),reconstructed_image)
+
 
     save_path = "logs/vae-{}".format(args.z_size)
     print("Saving to {}".format(save_path))
     vae_controller.set_target_params()
     vae_controller.save(save_path)
+
+    value_to_save = { 'train_step_list':train_step_list,
+                    'train_loss_list':train_loss_list,
+                    'r_loss_list':r_loss_list,
+                    'kl_loss_list':kl_loss_list
+    }
+    np.savez("VAE_train.npz",**value_to_save)
 
      # Plot Graph
     assert len(train_step_list) == len(train_loss_list) == len(r_loss_list) == len(kl_loss_list), "Error in len of list when plotting graph"

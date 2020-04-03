@@ -21,7 +21,7 @@ JERK_REWARD_WEIGHT = 0.0
 
 # very smooth control: 10% -> 0.2 diff in steering allowed (requires more training)
 # smooth control: 15% -> 0.3 diff in steering allowed
-MAX_STEERING_DIFF = 0.15
+MAX_STEERING_DIFF = 0.10
 # Negative reward for getting off the road
 REWARD_CRASH = -10
 # Penalize the agent even more when being fast
@@ -36,9 +36,9 @@ MIN_THROTTLE = 0.3
 # max_throttle: 0.6 for level 0 and 0.5 for level 1
 MAX_THROTTLE = 0.6
 # Number of past commands to concatenate with the input
-N_COMMAND_HISTORY = 20
+N_COMMAND_HISTORY = 0
 # Max cross track error (used in normal mode to reset the car)
-MAX_CTE_ERROR = 3.0
+MAX_CTE_ERROR = 3
 
 # Action repeat
 FRAME_SKIP = 1
@@ -53,6 +53,6 @@ SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
 # Show input and reconstruction in the teleop panel
 SHOW_IMAGES_TELEOP = True
 
-Debug_RL_Input = False
-Img_Raw_Preprocess = False
-Edges_Detection = False       # True: Edges Detection     False: cv2Grey
+Debug_RL_Input = True
+Img_Raw_Preprocess = True
+Grey_Only = False       # False: Edges Detection     True: cv2Grey

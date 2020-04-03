@@ -115,8 +115,7 @@ class SACWithVAE(SAC):
                 if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
                     print("{} steps".format(ep_len))
 
-                # Debug Purpose: Check the input shape that store into replay_buffer
-                # print(obs.shape)
+                # print("Input Shape to replay_buffer: {}".format(obs.shape))
                 # cv2.imwrite("TEST/{}.jpg".format(step),obs)
 
                 # Store transition in the replay buffer.
@@ -145,6 +144,7 @@ class SACWithVAE(SAC):
                 if done:
                     if self.action_noise is not None:
                         self.action_noise.reset()
+
                     if not (isinstance(self.env, VecEnv) or is_teleop_env):
                         obs = self.env.reset()
 
