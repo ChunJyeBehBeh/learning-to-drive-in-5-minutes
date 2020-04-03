@@ -8,9 +8,12 @@ import os
 import time
 from collections import OrderedDict
 from pprint import pprint
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import numpy as np
 import yaml
+
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, OrnsteinUhlenbeckActionNoise
@@ -30,7 +33,6 @@ sim_path = "E:\BEH FYP\projects\donkey_window\DonkeySim.exe"
 os.environ['DONKEY_SIM_PATH'] = sim_path
 os.environ['DONKEY_SIM_PORT'] = '9091'
 os.environ['DONKEY_SIM_HEADLESS'] = '1'
-# os.environ["DONKEY_SIM_HEADLESS"] = "True"
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='log', type=str)
@@ -38,12 +40,12 @@ parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to
                     default='', type=str)
 parser.add_argument('--algo', help='RL Algorithm', default='sac',
                     type=str, required=False, choices=list(ALGOS.keys()))
-parser.add_argument('-n', '--n-timesteps', help='Overwrite the number of timesteps', default=-1,
+parser.add_argument('-n', '--n-timesteps', help='Overwrite the number of timesteps', default=250000,
                     type=int)
 parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1,
                     type=int)
 parser.add_argument('-f', '--log-folder', help='Log folder', type=str, default='logs')
-parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
+parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='vae-level-0-dim-32.pkl')
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=50)
@@ -295,7 +297,8 @@ timestr = time.strftime("%Y%m%d-%H%M%S")
 value_to_save ={'total_episode_reward_store':total_episode_reward_store,
                 'throttle_mean':model.throttle_mean,
                 'throttle_min_max':model.throttle_min_max,
-                'steering_diff':model.steering_diff}
+                'steering_diff':model.steering_diff,
+                'step_episode_store':model.step_episode_store}
 
 np.savez("result_processing\\Episode_reward_{}_{}_{}_{}".format(args.algo,vae_used,x*args.n_timesteps,timestr),**value_to_save)
 

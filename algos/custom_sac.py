@@ -9,6 +9,7 @@ from stable_baselines.a2c.utils import total_episode_reward_logger
 from stable_baselines.ppo2.ppo2 import safe_mean, get_schedule_fn
 from stable_baselines.common import TensorboardWriter
 import cv2
+import matplotlib.pyplot as plt
 
 class SACWithVAE(SAC):
     """
@@ -71,11 +72,12 @@ class SACWithVAE(SAC):
                 obs = self.env.reset()
 
             self.episode_reward = np.zeros((1,))
-            self.total_episode_reward = np.zeros((1,))
+            self.total_episode_reward = np.array([])
 
             self.throttle_episode_store = np.array([])
             self.steering_episode_store = np.array([])
 
+            self.step_episode_store = np.array([])
             self.throttle_min_max = np.array([])
             self.throttle_mean = np.array([])
             self.steering_diff = np.array([])
@@ -125,7 +127,7 @@ class SACWithVAE(SAC):
                 # Debug Purpose: Check the input shape that store into replay_buffer
                 # print(obs.shape)
                 # cv2.imwrite("TEST/{}.jpg".format(step),obs)
-                
+                   
                 self.steering_episode_store = np.append(self.steering_episode_store,action[0])
                 self.throttle_episode_store = np.append(self.throttle_episode_store,action[1])
 
@@ -159,25 +161,48 @@ class SACWithVAE(SAC):
                         obs = self.env.reset()
 
                     self.throttle_min_max = np.append(self.throttle_min_max,[np.amin(self.throttle_episode_store),np.amax(self.throttle_episode_store)])
-                    self.throttle_mean = np.append(self.throttle_mean,np.sum(self.throttle_episode_store)/ep_len)
+                    self.throttle_mean = np.append(self.throttle_mean,np.sum(self.throttle_episode_store)/len(self.throttle_episode_store))
                     self.throttle_episode_store = 0.0
-
-                    self.steering_diff = np.append(self.steering_diff,np.sum(abs(np.diff(self.steering_episode_store,axis=0)))/ep_len)
+                    
+                    # print("---",len(self.steering_episode_store),ep_len)
+                    self.steering_diff = np.append(self.steering_diff,np.sum(abs(np.diff(self.steering_episode_store,axis=0)))/len(self.steering_episode_store))
                     self.steering_episode_store = 0.0
+
+                    self.step_episode_store = np.append(self.step_episode_store,ep_len)
+                    
                     
                     print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
                     self.total_episode_reward = np.append(self.total_episode_reward,episode_rewards[-1])
                     episode_rewards.append(0.0)
                     ep_len = 0
+                    
+                    plt.subplot(221)
+                    plt.plot(self.total_episode_reward,label='episode')
+                    plt.legend()
+
+                    plt.subplot(222)
+                    plt.plot(self.throttle_mean,label='throttle')
+                    plt.legend()
+
+                    plt.subplot(223)
+                    plt.plot(self.steering_diff,label='steering')
+                    plt.legend()
+
+                    plt.subplot(224)
+                    plt.plot(self.step_episode_store,label='step')   
+                    plt.legend()
+                    plt.show()
+                    plt.close()
+                    
                     mb_infos_vals = self.optimize(step, writer, current_lr)
                     
+                
                     # Refresh obs when using TeleopEnv
                     if is_teleop_env:
                         print("Waiting for teleop")
                         obs = self.env.wait_for_teleop_reset()
-                    self.env.reset()
-                    self.env.reset()
-
+                    obs = self.env.reset()
+                    obs = self.env.reset()
 
                 # Log losses and entropy, useful for monitor training
                 if len(mb_infos_vals) > 0:

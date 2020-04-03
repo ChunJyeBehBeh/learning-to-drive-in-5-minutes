@@ -1,4 +1,4 @@
-# Code adapted from https://github.com/araffin/rl-baselines-zoo
+ng# Code adapted from https://github.com/araffin/rl-baselines-zoo
 # Author: Antonin Raffin
 # python enjoy.py --algo sac -vae vae-level-0-dim-32.pkl --exp-id 1 -n 5000
 # python enjoy.py --algo sac --exp-id 15 -n 5000
@@ -6,13 +6,14 @@
 import argparse
 import os
 import time
-import random
 
 import gym
 import numpy as np
 from stable_baselines.common import set_global_seeds
 
 from utils.utils import ALGOS, create_test_env, get_latest_run_id, get_saved_hyperparams
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs')
@@ -77,6 +78,9 @@ env = create_test_env(args.level, stats_path=stats_path, seed=args.seed, log_dir
 print("Loaded Model path from {}".format(model_path))
 model = ALGOS[algo].load(model_path)
 
+donkeyEnv = env.envs[0].env
+donkeyEnv.regen_road(rand_seed=40, road_style=0,turn_increment=1)
+
 obs = env.reset()
 
 # Force deterministic for SAC and DDPG
@@ -86,45 +90,24 @@ if args.verbose >= 1:
 
 running_reward = 0.0
 ep_len = 0
-throttle_store = np.array([])
-steering_store = np.array([])
-
-for step in range(args.n_timesteps):
+for _ in range(args.n_timesteps):
     action, _ = model.predict(obs, deterministic=deterministic)
     # Clip Action to avoid out of bound errors
     if isinstance(env.action_space, gym.spaces.Box):
         action = np.clip(action, env.action_space.low, env.action_space.high)
-    
-    throttle_store = np.append(throttle_store,action[0][0])
-    steering_store = np.append(steering_store,action[0][1])
     obs, reward, done, infos = env.step(action)
     if not args.no_render:
         env.render('human')
     running_reward += reward[0]
     ep_len += 1
 
-    if done and args.verbose >= 1 or step+1 == args.n_timesteps:
+    if done and args.verbose >= 1:
         # NOTE: for env using VecNormalize, the mean reward
         # is a normalized reward when `--norm_reward` flag is passed
         print("Episode Reward: {:.2f}".format(running_reward))
         print("Episode Length", ep_len)
-
-        value_to_save = {'throttle':throttle_store,
-                            'steering':steering_store
-        }
-        np.savez("result_processing\\result_{}".format(args.exp_id),**value_to_save)
-
-        if(step+1<args.n_timesteps):
-            print("Episode stop! Comment the [break] in if done to test more than one episode!")       
-        
         running_reward = 0.0
         ep_len = 0
-        
-        # https://github.com/tleyden/learning-to-drive-in-5-minutes/commit/f32592be64238509d595b798b37402000fce9444
-        # print("Regenerating track")
-        # donkeyEnv = env.envs[0].env
-        # road_styles = range(5)
-        # donkeyEnv.regen_road(rand_seed=int(time.time()), road_style=random.choice(road_styles))
 
 env.reset()
 env.envs[0].env.exit_scene()

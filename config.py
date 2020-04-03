@@ -38,7 +38,7 @@ MAX_THROTTLE = 0.6
 # Number of past commands to concatenate with the input
 N_COMMAND_HISTORY = 20
 # Max cross track error (used in normal mode to reset the car)
-MAX_CTE_ERROR = 3.0
+MAX_CTE_ERROR = 2.5
 
 # Action repeat
 FRAME_SKIP = 1

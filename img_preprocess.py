@@ -9,7 +9,7 @@ from config import Edges_Detection
 road = 50   
 track= 40   (desert)
 '''
-ROI_y = 50
+ROI_y = 30
 x=0
 
 def detect_edges(image, low_threshold, high_threshold):

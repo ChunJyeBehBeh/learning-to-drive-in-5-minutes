@@ -1,5 +1,5 @@
 # Original author: Tawn Kramer
-
+import os
 import asyncore
 import base64
 import math
@@ -144,6 +144,8 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.last_steering = 0.0
         self.steering_diff = 0.0
 
+        self.cte_record = np.array([])
+
         # Define which method should be called
         # for each type of message
         self.fns = {'telemetry': self.on_telemetry,
@@ -254,6 +256,11 @@ class DonkeyUnitySimHandler(IMesgHandler):
         :param done: (bool)
         :return: (float)
         """
+        if os.getenv('save_cte_test') == '1':
+            # print("testing phase -> save cte")
+            self.cte_record = np.append(self.cte_record,self.cte)
+            np.savez("result_processing\\reward_function\\steering\\cte_record_64",self.cte_record)
+                
         # if done:
         #     # penalize the agent for getting off the road fast
         #     norm_throttle = (self.last_throttle - MIN_THROTTLE) / (MAX_THROTTLE - MIN_THROTTLE)
@@ -261,18 +268,16 @@ class DonkeyUnitySimHandler(IMesgHandler):
         # # 1 per timesteps + throttle
         # throttle_reward = THROTTLE_REWARD_WEIGHT * (self.last_throttle / MAX_THROTTLE)
         # return 1 + throttle_reward
-
+        
         if done:
-            return -1.0
+            return -5.0
 
         if abs(self.cte) > self.max_cte_error:
-            return -1.0
-
-        # return 1.0 - (abs(self.cte) / self.max_cte_error) + 1 - abs(self.last_steering-self.steering)/2
-        # return 1 -abs(self.steering_diff)/2
-
+            return -5.0
+        
+        # return (self.last_throttle - MIN_THROTTLE) / (MAX_THROTTLE - MIN_THROTTLE)        
         return 1.0 - (abs(self.cte) / self.max_cte_error) 
-
+        # return 1 -abs(self.steering_diff)/2
 
     # ------ Socket interface ----------- #
 
@@ -344,23 +349,40 @@ class DonkeyUnitySimHandler(IMesgHandler):
                 print("SceneNames:", names)
             self.send_load_scene(names[self.level_idx])
 
-    def send_regen_road(self):
-        """
-        Regenerate the road, where available. For now only in level 0.
-        In level 0 there are currently 5 road styles. This changes the texture on the road
-        and also the road width.
-        The rand_seed can be used to get some determinism in road generation.
-        The turn_increment defaults to 1.0 internally. Provide a non zero positive float
-        to affect the curviness of the road. Smaller numbers will provide more shallow curves.
-        """
-        msg = {
-            'msg_type' : 'regen_road',
-            'road_style': int(self.road_style).__str__(),
-            'rand_seed': int(self.seed).__str__(),
-            'turn_increment': self.turn_increment.__str__()
-        }
-        print("Regen road, road_style={}, seed={}".format(self.road_style, self.seed))
-        self.queue_message(msg)
+    if os.getenv('save_cte_test') == '2':
+        def send_regen_road(self, road_style=0, rand_seed=0, turn_increment=0.0):
+            '''
+            Regenerate the road, where available. For now only in level 0.
+            In level 0 there are currently 5 road styles. This changes the texture on the road
+            and also the road width.
+            The rand_seed can be used to get some determinism in road generation.
+            The turn_increment defaults to 1.0 internally. Provide a non zero positive float
+            to affect the curviness of the road. Smaller numbers will provide more shallow curves.
+            '''
+            msg = {'msg_type': 'regen_road',
+                'road_style': road_style.__str__(),
+                'rand_seed': rand_seed.__str__(),
+                'turn_increment': turn_increment.__str__()}
+            self.queue_message(msg)
+    else:
+        def send_regen_road(self):
+            """
+            Regenerate the road, where available. For now only in level 0.
+            In level 0 there are currently 5 road styles. This changes the texture on the road
+            and also the road width.
+            The rand_seed can be used to get some determinism in road generation.
+            The turn_increment defaults to 1.0 internally. Provide a non zero positive float
+            to affect the curviness of the road. Smaller numbers will provide more shallow curves.
+            """
+            msg = {
+                'msg_type' : 'regen_road',
+                'road_style': int(self.road_style).__str__(),
+                'rand_seed': int(self.seed).__str__(),
+                'turn_increment': self.turn_increment.__str__()
+            }
+            print("Regen road, road_style={}, seed={}".format(self.road_style, self.seed))
+            self.queue_message(msg)
+
 
     def send_control(self, steer, throttle):
         """
